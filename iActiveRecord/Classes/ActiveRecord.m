@@ -414,15 +414,15 @@ static NSString *registerHasManyThrough = @"_ar_registerHasManyThrough";
 {
     Class RelationshipClass = NSClassFromString(aRelationshipClassName);
     
-    NSString *currentId = [NSString stringWithFormat:@"%@ID", [self recordName]];
-    NSString *relId = [NSString stringWithFormat:@"%@ID", [aRecord recordName]];
+    NSString *currentId = [self foreignKeyName];
+    NSString *relId = [aRecord foreignKeyName];
     ARLazyFetcher *fetcher = [RelationshipClass lazyFetcher];
     [fetcher where:@"%@ = %@ AND %@ = %@", currentId, self.id, relId, aRecord.id, nil];
     if ([fetcher count] != 0) {
         return;
     }
-    NSString *currentIdSelectorString = [NSString stringWithFormat:@"set%@Id:", [[self class] description]];
-    NSString *relativeIdSlectorString = [NSString stringWithFormat:@"set%@Id:", aClassname];
+    NSString *currentIdSelectorString = [NSString stringWithFormat:@"set%@:", [self foreignKeyName]];
+    NSString *relativeIdSlectorString = [NSString stringWithFormat:@"set%@:", [aRecord foreignKeyName]];
     
     SEL currentIdSelector = NSSelectorFromString(currentIdSelectorString);
     SEL relativeIdSelector = NSSelectorFromString(relativeIdSlectorString);
@@ -438,8 +438,8 @@ static NSString *registerHasManyThrough = @"_ar_registerHasManyThrough";
 - (void)removeRecord:(ActiveRecord *)aRecord through:(NSString *)aClassName {
     Class relationsClass = NSClassFromString(aClassName);
     ARLazyFetcher *fetcher = [relationsClass lazyFetcher];
-    NSString *currentId = [NSString stringWithFormat:@"%@ID", [self recordName]];
-    NSString *relId = [NSString stringWithFormat:@"%@ID", [aRecord recordName]];
+    NSString *currentId = [self foreignKeyName];
+    NSString *relId = [aRecord foreignKeyName];
     [fetcher where:@"%@ = %@ AND %@ = %@", currentId, self.id, relId, aRecord.id, nil];
     NSArray *records = [fetcher fetchRecords];
     ActiveRecord *record = records.count ? [records objectAtIndex:0] : nil;
