@@ -9,6 +9,7 @@
 #import "ActiveRecord.h"
 #import "ARDatabaseManager.h"
 #import "NSString+lowercaseFirst.h"
+#import "NSString+uppercaseFirst.h"
 #import <objc/runtime.h>
 #import "ARValidationsHelper.h"
 #import "ARErrorHelper.h"
@@ -414,15 +415,15 @@ static NSString *registerHasManyThrough = @"_ar_registerHasManyThrough";
 {
     Class RelationshipClass = NSClassFromString(aRelationshipClassName);
     
-    NSString *currentId = [self foreignKeyName];
+    NSString *currentId = [self performSelector:@selector(foreignKeyName)];
     NSString *relId = [aRecord foreignKeyName];
     ARLazyFetcher *fetcher = [RelationshipClass lazyFetcher];
     [fetcher where:@"%@ = %@ AND %@ = %@", currentId, self.id, relId, aRecord.id, nil];
     if ([fetcher count] != 0) {
         return;
     }
-    NSString *currentIdSelectorString = [NSString stringWithFormat:@"set%@:", [self foreignKeyName]];
-    NSString *relativeIdSlectorString = [NSString stringWithFormat:@"set%@:", [aRecord foreignKeyName]];
+    NSString *currentIdSelectorString = [NSString stringWithFormat:@"set%@:", [currentId uppercaseFirst]];
+    NSString *relativeIdSlectorString = [NSString stringWithFormat:@"set%@:", [relId uppercaseFirst]];
     
     SEL currentIdSelector = NSSelectorFromString(currentIdSelectorString);
     SEL relativeIdSelector = NSSelectorFromString(relativeIdSlectorString);
