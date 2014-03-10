@@ -25,6 +25,7 @@
     self = [super init];
     self.schemes = [NSMutableDictionary new];
     self.indices = [NSMutableDictionary new];
+    self.uniqueIndices = [NSMutableDictionary new];
     return self;
 }
 
@@ -63,7 +64,7 @@
 
 - (void)addUniqueIndexOnColumn:(NSString *)aColumn ofRecord:(Class)aRecordClass {
     [self.uniqueIndices addValue:aColumn
-              toArrayNamed:[aRecordClass performSelector:@selector(recordName)]];
+                    toArrayNamed:[aRecordClass performSelector:@selector(recordName)]];
 }
 
 - (NSArray *)uniqueIndicesForRecord:(Class)aRecordClass {

@@ -64,6 +64,7 @@ static NSArray *records = nil;
         [self createTable:Record];
     }
     [self createIndices];
+    [self createUniqueIndices];
 }
 
 - (void)createTable:(Class)aRecord {
@@ -112,6 +113,7 @@ static NSArray *records = nil;
         }
     }
     [self createIndices];
+    [self createUniqueIndices];
 }
 
 - (NSArray *)columnsForTable:(NSString *)aTableName {
