@@ -572,6 +572,17 @@ static NSArray *records = nil;
     }
 }
 
+- (void)createUniqueIndices {
+    for (Class record in [self records]) {
+        NSArray *indices = [[ARSchemaManager sharedInstance] uniqueIndicesForRecord:record];
+        for (NSString *indexColumn in indices) {
+            const char *sqlQuery = [ARSQLBuilder sqlOnCreateUniqueIndex:indexColumn
+                                                        forRecord:record];
+            [self executeSqlQuery:sqlQuery];
+        }
+    }
+}
+
 - (NSArray *)records {
     if (records == nil) {
         records = class_getSubclasses([ActiveRecord class]);

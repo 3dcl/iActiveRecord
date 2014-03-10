@@ -61,4 +61,13 @@
     return [self.indices valueForKey:[aRecordClass performSelector:@selector(recordName)]];
 }
 
+- (void)addUniqueIndexOnColumn:(NSString *)aColumn ofRecord:(Class)aRecordClass {
+    [self.uniqueIndices addValue:aColumn
+              toArrayNamed:[aRecordClass performSelector:@selector(recordName)]];
+}
+
+- (NSArray *)uniqueIndicesForRecord:(Class)aRecordClass {
+    return [self.uniqueIndices valueForKey:[aRecordClass performSelector:@selector(recordName)]];
+}
+
 @end

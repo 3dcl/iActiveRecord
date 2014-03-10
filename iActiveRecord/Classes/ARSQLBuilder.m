@@ -73,9 +73,19 @@
     return [sqlString UTF8String];
 }
 
-+ (const char *)sqlOnCreateIndex:(NSString *)aColumnName forRecord:(ActiveRecord *)aRecord {
++ (const char *)sqlOnCreateUniqueIndex:(NSString *)aColumnName forRecord:(ActiveRecord *)aRecord {
     NSString *sqlString = [NSString stringWithFormat:
                            @"CREATE UNIQUE INDEX IF NOT EXISTS index_%@_on_%@ ON \"%@\" (\"%@\")",
+                           [aRecord recordName],
+                           aColumnName,
+                           [aRecord recordName],
+                           aColumnName];
+    return [sqlString UTF8String];
+}
+
++ (const char *)sqlOnCreateIndex:(NSString *)aColumnName forRecord:(ActiveRecord *)aRecord {
+    NSString *sqlString = [NSString stringWithFormat:
+                           @"CREATE INDEX IF NOT EXISTS index_%@_on_%@ ON \"%@\" (\"%@\")",
                            [aRecord recordName],
                            aColumnName,
                            [aRecord recordName],

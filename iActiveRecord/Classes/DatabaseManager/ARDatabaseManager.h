@@ -51,6 +51,7 @@
 - (BOOL)executeSqlQuery:(const char *)anSqlQuery;
 
 - (void)createIndices;
+- (void)createUniqueIndices;
 - (NSArray *)records;
 
 @end
