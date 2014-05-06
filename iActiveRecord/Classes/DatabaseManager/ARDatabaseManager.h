@@ -31,6 +31,7 @@
 - (void)closeConnection;
 
 - (NSArray *)tables;
+- (NSArray *)views;
 - (NSArray *)columnsForTable:(NSString *)aTableName;
 
 - (NSString *)tableName:(NSString *)modelName;
@@ -50,6 +51,7 @@
 - (BOOL)executeSqlQuery:(const char *)anSqlQuery;
 
 - (void)createIndices;
+- (void)createUniqueIndices;
 - (NSArray *)records;
 
 @end

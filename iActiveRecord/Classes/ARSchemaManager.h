@@ -12,6 +12,7 @@
 
 @property (nonatomic, retain) NSMutableDictionary *schemes;
 @property (nonatomic, retain) NSMutableDictionary *indices;
+@property (nonatomic, retain) NSMutableDictionary *uniqueIndices;
 
 + (instancetype)sharedInstance;
 
@@ -20,5 +21,7 @@
 
 - (void)addIndexOnColumn:(NSString *)aColumn ofRecord:(Class)aRecordClass;
 - (NSArray *)indicesForRecord:(Class)aRecordClass;
+- (void)addUniqueIndexOnColumn:(NSString *)aColumn ofRecord:(Class)aRecordClass;
+- (NSArray *)uniqueIndicesForRecord:(Class)aRecordClass;
 
 @end

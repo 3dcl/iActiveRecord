@@ -21,7 +21,8 @@ namespace AR {
     NSString *NSNumberColumn::sqlValueFromRecord(ActiveRecord *record) const
     {
         NSNumber *value = objc_getAssociatedObject(record, this->columnKey());
-        
+
+        if (!value) return nil;
         return [NSString stringWithFormat:@"%d", [value intValue]];
     }
     

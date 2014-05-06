@@ -23,10 +23,17 @@
     for (int index = 0; index < columnsCount; index++) {
         ARColumn *column = [columnsIterator nextObject];
         NSString *value = [column sqlValueForRecord:aRecord];
-        NSString *updater = [NSString stringWithFormat:
-                             @"\"%@\"=\"%@\"",
-                             column.columnName,
-                             [value stringByReplacingOccurrencesOfString:@"\"" withString:@"\"\""]];
+        NSString *updater;
+        if (value) {
+            updater = [NSString stringWithFormat:
+                         @"\"%@\"=\"%@\"",
+                         column.columnName,
+                         [value stringByReplacingOccurrencesOfString:@"\"" withString:@"\"\""]];
+        } else {
+            updater = [NSString stringWithFormat:
+                         @"\"%@\"=NULL",
+                         column.columnName];
+        }
         [columnValues addObject:updater];
     }
     NSString *sqlString = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ WHERE id = %@",
@@ -66,9 +73,20 @@
     return [sqlString UTF8String];
 }
 
++ (const char *)sqlOnCreateUniqueIndex:(NSString *)aColumnName forRecord:(ActiveRecord *)aRecord {
+    NSString *sqlString = [NSString stringWithFormat:
+                           @"CREATE UNIQUE INDEX IF NOT EXISTS index_unique_%@_on_%@ ON \"%@\" (\"%@\")",
+                           [aRecord recordName],
+                           aColumnName,
+                           [aRecord recordName],
+                           aColumnName];
+    return [sqlString UTF8String];
+}
+
 + (const char *)sqlOnCreateIndex:(NSString *)aColumnName forRecord:(ActiveRecord *)aRecord {
     NSString *sqlString = [NSString stringWithFormat:
-                           @"CREATE UNIQUE INDEX IF NOT EXISTS index_%@ ON \"%@\" (\"%@\")",
+                           @"CREATE INDEX IF NOT EXISTS index_%@_on_%@ ON \"%@\" (\"%@\")",
+                           [aRecord recordName],
                            aColumnName,
                            [aRecord recordName],
                            aColumnName];

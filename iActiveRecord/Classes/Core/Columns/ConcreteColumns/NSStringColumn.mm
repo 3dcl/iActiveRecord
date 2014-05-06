@@ -10,7 +10,10 @@ namespace AR {
 
     bool NSStringColumn::bind(sqlite3_stmt *statement, const int columnIndex, const id value) const
     {
-        return sqlite3_bind_text(statement, columnIndex, [value UTF8String], -1, SQLITE_TRANSIENT) == SQLITE_OK;
+        if (value)
+            return sqlite3_bind_text(statement, columnIndex, [value UTF8String], -1, SQLITE_TRANSIENT) == SQLITE_OK;
+        else
+            return sqlite3_bind_null(statement, columnIndex) == SQLITE_OK;
     }
 
     const char *NSStringColumn::sqlType(void) const {

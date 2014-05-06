@@ -34,6 +34,7 @@ typedef void (^ARConfigurationBlock) (ARConfiguration *config);
 @property (nonatomic, retain) NSNumber *id;
 @property (nonatomic, retain) NSDate *updatedAt;
 @property (nonatomic, retain) NSDate *createdAt;
+@property (nonatomic, retain) NSNumber *Z_OPT;
 
 - (void)markAsNew;
 
@@ -61,4 +62,7 @@ typedef void (^ARConfigurationBlock) (ARConfiguration *config);
 
 + (NSString *)recordName;
 
+#pragma mark - Default foreign key name
+
++ (NSString*) foreignKeyName;
 @end

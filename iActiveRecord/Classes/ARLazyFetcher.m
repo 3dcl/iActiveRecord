@@ -259,8 +259,7 @@
 - (ARLazyFetcher *)join:(Class)aJoinRecord {
 
     NSString *_recordField = @"id";
-    NSString *_joinField = [NSString stringWithFormat:@"%@Id",
-                            [[recordClass description] lowercaseFirst]];
+    NSString *_joinField = [recordClass performSelector: @selector(foreignKeyName)];
     [self join:aJoinRecord
        useJoin:ARJoinInner
        onField:_recordField
@@ -343,11 +342,12 @@
     }
     va_end(args);
 
-    NSRange range = NSMakeRange(0, [sqlArguments count]);
-    NSMutableData * data = [NSMutableData dataWithLength:sizeof(id) * [sqlArguments count]];
-    [sqlArguments getObjects: (__unsafe_unretained id *)data.mutableBytes range:range];
-    NSString * result = [[NSString alloc] initWithFormat:aCondition
-                                               arguments:data.mutableBytes];
+    __unsafe_unretained id  *argList = (__unsafe_unretained id *)calloc(1UL, sizeof(id) * sqlArguments.count);
+    for (NSInteger i = 0; i < sqlArguments.count; i++) {
+        argList[i] = sqlArguments[i];
+    }
+    NSString *result = [[NSString alloc] initWithFormat:aCondition, *argList];
+    free(argList);
 
     if (!self.whereStatement) {
         self.whereStatement = [[NSMutableString alloc] initWithString:result];
