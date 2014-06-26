@@ -41,7 +41,6 @@ static NSMutableDictionary *relationshipsDictionary = nil;
 @dynamic id;
 @dynamic createdAt;
 @dynamic updatedAt;
-@dynamic Z_OPT;
 
 #pragma mark - Initialize
 
