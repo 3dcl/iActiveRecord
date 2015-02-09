@@ -353,7 +353,7 @@
         NSUInteger prefix = range.location + [[sqlArguments objectAtIndex:i] length];
         testRange = NSMakeRange(prefix, result.length - prefix);
     }
-    NSLog(@"result: %@", result);
+
 #else
     NSRange range = NSMakeRange(0, [sqlArguments count]);
     NSMutableData * data = [NSMutableData dataWithLength:sizeof(id) * [sqlArguments count]];
