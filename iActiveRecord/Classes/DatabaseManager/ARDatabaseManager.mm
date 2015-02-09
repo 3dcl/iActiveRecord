@@ -436,7 +436,7 @@ static NSArray *records = nil;
 #warning remove
     NSString *aSqlRequest = [NSString stringWithFormat:@"select MAX(id) from '%@'", aRecordName];
     NSInteger res = [self functionResult:aSqlRequest];
-    return [NSNumber numberWithInt:res];
+    return [NSNumber numberWithLong:res];
 }
 
 - (NSInteger)functionResult:(NSString *)anSql {
