@@ -9,6 +9,7 @@
 #import "ARValidatorPresence.h"
 #import "ARErrorHelper.h"
 #import "ActiveRecord.h"
+#import "ActiveRecord_Private.h"
 
 @implementation ARValidatorPresence
 

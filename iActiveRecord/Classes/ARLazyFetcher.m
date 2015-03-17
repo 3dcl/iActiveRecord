@@ -13,6 +13,8 @@
 #import "ActiveRecord.h"
 #import "ActiveRecord_Private.h"
 #import "ARLazyFetcher_Private.h"
+#import "ActiveRecord_Private.h"
+#import "NSString+sqlRepresentation.h"
 
 @implementation ARLazyFetcher
 
@@ -24,13 +26,29 @@
         limit = nil;
         offset = nil;
         sqlRequest = nil;
+        row = nil;
         orderByConditions = nil;
         useJoin = NO;
         useRandomOrder = NO;
+        relationType = ARRelationTypeNone;
     }
     return self;
 }
+    - (instancetype)initWithRecord:(ActiveRecord *)entityRow thatHasMany:(NSString *)aClassName through:(NSString *)aRelationsipClassName {
+        self = [self init];
+        row = entityRow;
+        recordClass = NSClassFromString(aClassName);//[entityRow class];
+        hasManyClass = [aClassName copy];
+        hasManyThroughClass = [aRelationsipClassName copy];
 
+        if(hasManyClass && hasManyThroughClass) {
+            relationType = ARRelationTypeHasManyThrough;
+        } else if(hasManyClass) {
+            relationType = ARRelationTypeHasMany;
+        }
+
+        return self;
+    }
 - (instancetype)initWithRecord:(Class)aRecord {
     self = [self init];
     recordClass = aRecord;
@@ -86,11 +104,35 @@
     sqlRequest = [sql copy];
 }
 
+
+- (void)createRecordHasManyThrough {
+    NSString *relId = [NSString stringWithFormat:@"%@Id", [[row recordName] lowercaseFirst]];
+    Class relClass = NSClassFromString(hasManyThroughClass);
+    [self join:relClass];
+    [self where:@"%@.%@ = %@", [[relClass performSelector:@selector(recordName)] stringAsColumnName], relId, row.id, nil];
+}
+
+- (void)createRecordHasMany {
+    NSString *selfId = [NSString stringWithFormat:@"%@Id", [[row class] description]];
+    [self where:@"%@ = %@", [selfId stringAsColumnName], row.id, nil];
+}
+
+
+
 - (NSString *)createWhereStatement {
     NSMutableString *statement = [NSMutableString string];
+    if(!whereStatement && row) {
+        if(relationType==ARRelationTypeHasMany) {
+           [self createRecordHasMany];
+        } else if(relationType==ARRelationTypeHasManyThrough) {
+            [self createRecordHasManyThrough];
+        }
+    }
+
     if (whereStatement) {
         [statement appendFormat:@" WHERE (%@) ", self.whereStatement];
     }
+
     return statement;
 }
 
@@ -114,13 +156,13 @@
 
 - (NSString *)createLimitOffsetStatement {
     NSMutableString *statement = [NSMutableString string];
-    int limitNum = -1;
+    NSInteger limitNum = -1;
     if (limit) {
-        limitNum = limit.intValue;
+        limitNum = limit.integerValue;
     }
     [statement appendFormat:@" LIMIT %d ", limitNum];
     if (offset) {
-        [statement appendFormat:@" OFFSET %d ", offset.intValue];
+        [statement appendFormat:@" OFFSET %d ", offset.integerValue];
     }
     return statement;
 }
@@ -161,11 +203,9 @@
     NSMutableArray *fields = [NSMutableArray array];
     NSString *fieldname = nil;
     for (NSString *field in [self recordFields]) {
-        NSString* recordName = [recordClass performSelector:@selector(recordName)];
         fieldname = [NSString stringWithFormat:
-                     @"\"%@\".\"%@\" AS \"%@\"",
-                     recordName,
-                     field,
+                     @"\"%@\".\"%@\"",
+                     [recordClass performSelector:@selector(recordName)],
                      field];
         [fields addObject:fieldname];
     }
@@ -261,7 +301,8 @@
 - (ARLazyFetcher *)join:(Class)aJoinRecord {
 
     NSString *_recordField = @"id";
-    NSString *_joinField = [recordClass performSelector: @selector(foreignKeyName)];
+    NSString *_joinField = [NSString stringWithFormat:@"%@Id",
+                            [[recordClass description] lowercaseFirst]];
     [self join:aJoinRecord
        useJoin:ARJoinInner
        onField:_recordField
@@ -284,7 +325,31 @@
 
 #pragma mark - Immediately fetch
 
+- (NSArray *)cachedRecords {
+
+    if(!row) return nil;
+
+    NSArray *entities = nil;
+    NSString *entityKey = [NSString stringWithFormat:@"%@", [[recordClass recordName] lowercaseFirst]];
+
+    if (relationType == ARRelationTypeHasManyThrough) {
+        entities = [row cachedArrayForKey:entityKey];
+    } else if (relationType == ARRelationTypeHasMany) {
+        entities = [row cachedEntityForKey:entityKey];
+    }
+    return entities;
+}
+
 - (NSArray *)fetchRecords {
+
+    if([row isNewRecord]) {
+        // NEW Records down't have an ID can't query database. Return cache if available.
+        NSArray *cachedEntities = [self cachedRecords];
+        return cachedEntities ? cachedEntities : [NSArray array];
+    }
+
+    arrayRows = nil; //ensure that iteration dowsn't used cached rows but the following rows in the database.
+
     [self buildSql];
     return [[ARDatabaseManager sharedManager] allRecordsWithName:[recordClass description]
                                                           withSql:sqlRequest];
@@ -311,17 +376,36 @@
     return [[ARDatabaseManager sharedManager] joinedRecordsWithSql:sql];
 }
 
-- (NSInteger)count {
-    NSMutableString *sql = [NSMutableString string];
+- (id)objectAtIndex: (NSUInteger)index {
+    NSArray *rows = nil;
+    if(!arrayRows) {
+        arrayRows = [self fetchRecords];
+    }
+    rows = arrayRows;
 
+    return [arrayRows objectAtIndex:index];
+}
+
+- (NSUInteger)count {
+
+    if(arrayRows)
+        return [arrayRows count];
+
+    if([row isNewRecord]) {
+       return [[self cachedRecords] count];
+    }
+
+    NSMutableString *sql = [NSMutableString string];
     NSString *select = [NSString stringWithFormat:@"SELECT count(*) FROM \"%@\" ",
                         [recordClass performSelector:@selector(recordName)]];
     NSString *where = [self createWhereStatement];
     NSString *join = [self createJoinStatement];
+    NSInteger resultCount = 0;
     [sql appendString:select];
     [sql appendString:join];
     [sql appendString:where];
-    return [[ARDatabaseManager sharedManager] functionResult:sql];
+    resultCount =  [[ARDatabaseManager sharedManager] functionResult:sql];
+    return limit ? MIN([limit intValue],resultCount) : resultCount;
 }
 
 - (ARLazyFetcher *)where:(NSString *)aCondition, ...{
@@ -332,44 +416,110 @@
     va_start(args, aCondition);
     id value = nil;
     while ( (value = va_arg(args, id)) ) {
-        if ([value isKindOfClass:[NSArray class]] || [value isKindOfClass:[NSSet class]]) {
+        BOOL isColumnName = [value respondsToSelector:@selector(isColumnName)] ? [value isColumnName] : NO;
+        if(isColumnName && [value isKindOfClass:[NSString class]])  {
+            argument =  [NSString stringWithFormat:@"\"%@\"", value];
+        } else if ([value isKindOfClass:[NSArray class]] || [value isKindOfClass:[NSSet class]]) {
             argument = [value performSelector:@selector(toSql)];
         } else {
             if ([value respondsToSelector:@selector(toSql)]) {
                 value = [value performSelector:@selector(toSql)];
             }
-            argument = [NSString stringWithFormat:@"\"%@\"", value];
+            argument = [NSString stringWithFormat:@"'%@'", value];
         }
         [sqlArguments addObject:argument];
     }
     va_end(args);
 
-#ifdef __x86_64__
-    NSString* result = aCondition;
-    NSRange testRange = NSMakeRange(0, result.length);
-    
-    for (int i = 0; i < sqlArguments.count; i++) {
-        NSRange range = [result rangeOfString:@"%@" options:NSLiteralSearch range:testRange];
-        result = [result stringByReplacingCharactersInRange:range withString:[sqlArguments objectAtIndex:i]];
-        //move the test range up to the last character of the replacement
-        NSUInteger prefix = range.location + [[sqlArguments objectAtIndex:i] length];
-        testRange = NSMakeRange(prefix, result.length - prefix);
-    }
 
-#else
-    NSRange range = NSMakeRange(0, [sqlArguments count]);
-    NSMutableData * data = [NSMutableData dataWithLength:sizeof(id) * [sqlArguments count]];
-    [sqlArguments getObjects: (__unsafe_unretained id *)data.mutableBytes range:range];
-    NSString * result = [[NSString alloc] initWithFormat:aCondition
-                                               arguments:data.mutableBytes];
-#endif
+    NSMutableString *sqlQuery = [NSMutableString stringWithCapacity:[aCondition length]];
+    NSScanner *scanner = [NSScanner scannerWithString:aCondition];
+    NSCharacterSet *illegalCharacterSet = nil;// [NSCharacterSet illegalCharacterSet];
+    NSString *separatorString = @"%@";
+    NSString *container;
+    NSInteger sqlQueryIndex = 0;
+    NSInteger totalSQLArguments = [sqlArguments count];
+    scanner.charactersToBeSkipped = illegalCharacterSet;
+
+    while ([scanner isAtEnd] == NO) {
+        if([scanner scanUpToString:separatorString intoString:&container]) {
+            if(totalSQLArguments>sqlQueryIndex) {
+                id value = [sqlArguments objectAtIndex:sqlQueryIndex++];
+                [sqlQuery appendString:container];
+                [sqlQuery appendString: [value description]];
+                //[sqlQuery appendFormat:@"%@%@",container, [sqlArguments objectAtIndex:sqlQueryIndex++]];
+            } else
+                [sqlQuery appendString:container];
+            [scanner scanString:separatorString intoString:NULL]; // steps past seperator
+        } else if([scanner scanString:separatorString intoString:NULL]) {
+            [sqlQuery appendFormat:@"%@",[sqlArguments objectAtIndex:sqlQueryIndex++]];
+        }
+    }
 
     if (!self.whereStatement) {
-        self.whereStatement = [[NSMutableString alloc] initWithString:result];
+        self.whereStatement = sqlQuery;
     } else {
-        self.whereStatement = [NSMutableString stringWithFormat:@"%@AND %@", self.whereStatement, result];
+        self.whereStatement = [NSMutableString stringWithFormat:@"%@ AND %@", self.whereStatement, sqlQuery];
     }
     return self;
+}
+
+
+#pragma mark - FindBy Filters
+
+- (id) findById: (id) record_id {
+    NSArray *results = [[[self where:@" id = %@", record_id,nil] limit:1] fetchRecords];
+    return [results firstObject];
+}
+
+- (id) findByKey: (id) key value: (id) value {
+    NSString *condition = [NSString stringWithFormat:@" %@ = %%%@ ",[key stringAsColumnName],@"@"];
+    NSArray *results = [[[self where: condition, value,nil] limit:1] fetchRecords];
+    return [results firstObject];
+}
+
+- (NSArray *) findAllByKey: (id) key value: (id) value {
+    NSArray *results = [[self where: [NSString stringWithFormat:@" %@ = %%%@ ",[key stringAsColumnName],@"@"], value,nil]  fetchRecords];
+    return results;
+}
+
+- (NSArray *) findByConditions: (NSDictionary*) conditions {
+    NSMutableArray *results = [NSMutableArray array];
+    return results;
+}
+
+- (NSArray *) findAllByConditions: (NSDictionary*) conditions {
+    NSMutableArray *results = [NSMutableArray array];
+    return results;
+}
+
+- (id) fetchFirstRecord {
+    ActiveRecord *foundRecord = [[[self limit:1] fetchRecords] firstObject];
+    return foundRecord;
+}
+
+#pragma mark - WHERE Filters
+
+- (ARLazyFetcher *)whereField:(NSString *)aField equalToValue:(id)aValue{
+    return [self where:@"%@ = %@",[aField stringAsColumnName],aValue, nil];
+}
+- (ARLazyFetcher *)whereField:(NSString *)aField notEqualToValue:(id)aValue{
+    return [self where:@"%@ != %@",[aField stringAsColumnName],aValue, nil];
+}
+- (ARLazyFetcher *)whereField:(NSString *)aField in:(NSArray *)aValues{
+    return [self where:@"%@ IN %@",[aField stringAsColumnName],aValues,nil];
+}
+- (ARLazyFetcher *)whereField:(NSString *)aField notIn:(NSArray *)aValues{
+    return [self where:@"%@ NOT IN %@",[aField stringAsColumnName],aValues,nil];
+}
+- (ARLazyFetcher *)whereField:(NSString *)aField like:(NSString *)aPattern{
+    return [self where:@"%@ LIKE %@",[aField stringAsColumnName],aPattern, nil];
+}
+- (ARLazyFetcher *)whereField:(NSString *)aField notLike:(NSString *)aPattern{
+    return [self where:@"%@ NOT LIKE %@",[aField stringAsColumnName],aPattern, nil];
+}
+- (ARLazyFetcher *)whereField:(NSString *)aField between:(id)startValue and:(id)endValue{
+    return [self where:@"%@ BETWEEN %@ AND %@",[aField stringAsColumnName], startValue,endValue,nil];
 }
 
 @end
