@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name     = 'iActiveRecord'
-  s.version  = '1.9.1'
+  s.version  = '1.9.3'
   s.license  = 'MIT'
   s.summary  = 'ActiveRecord for iOS without CoreData, only SQLite.'
   s.homepage = 'https://github.com/AlexDenisov/iActiveRecord'
@@ -9,7 +9,7 @@ Pod::Spec.new do |s|
     For more details check Wiki on Github.
   }
   s.author   = { 'Alex Denisov' => '1101.debian@gmail.com' }
-  s.source   = { :git => 'https://github.com/AlexDenisov/iActiveRecord.git', :commit => '820f99422b56bb77c5a389f40bb54630096101be'}
+  s.source   = { :git => 'https://github.com/3dcl/iActiveRecord.git', :commit => 'e221d02168d767892ccdb74808bfd72d17239b28'}
   s.platform = :ios, '5.0'
   s.source_files = 'iActiveRecord/**/*.{c,h,m,mm}'
   s.library = 'sqlite3'
