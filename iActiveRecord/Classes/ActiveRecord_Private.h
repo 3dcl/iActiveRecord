@@ -7,33 +7,58 @@
 //
 
 #import "ActiveRecord.h"
+#define TO_SQL_VALUE(value) [value respondsToSelector:@selector(toSql)] ? [value toSql] : value
 
 @class ARLazyFetcher;
 @class ARError;
 @class ARColumn;
 
-@interface ActiveRecord ()
+
+
+@protocol ActiveRecordPrivateMethods <ActiveRecord>
++ (ActiveRecord*)persistedRecord;
+#pragma mark - Column getters
+
++ (ARColumn *)columnNamed:(NSString *)aColumnName;
+- (ARColumn *)columnNamed:(NSString *)aColumnName;
++ (NSString*) stringMappingForColumnNamed: (NSString*) columnName;
+- (NSString*) stringMappingForColumnNamed: (NSString*) columnName;
++ (NSString*) foreignPropertyKey;
+- (NSString*) foreignPropertyKey;
+@end
+
+@interface ActiveRecord () <ActiveRecordPrivateMethods>
 {
     @private
     BOOL isNew;
     NSMutableSet *errors;
-    NSMutableSet *_changedColumns;
+    BOOL shouldSync;
 }
+
+@property (nonatomic,strong) NSMutableSet *belongsToPersistentQueue;
+@property (nonatomic,strong) NSMutableSet *hasManyPersistentQueue;
+@property (nonatomic,strong) NSMutableSet *hasManyThroughRelationsQueue;
+@property (nonatomic,strong) NSMutableDictionary *entityCache;
+@property (nonatomic,strong) NSMutableDictionary *deserializedCache;
+@property (nonatomic,strong) NSMutableSet *changedColumns;
+#pragma mark - Lazy Persistent Helpers
+
+- (BOOL)hasQueuedRelationships;
+- (BOOL)persistQueuedManyRelationships;
 
 #pragma mark - Validations Declaration
 
 + (void)initializeValidators;
++ (void)initializeMapping;
 + (void)validateUniquenessOfField:(NSString *)aField;
 + (void)validatePresenceOfField:(NSString *)aField;
 + (void)validateField:(NSString *)aField withValidator:(NSString *)aValidator;
 
 #pragma mark - Resetting
-
+- (void)markAsPersisted;
 - (void)resetErrors;
 - (void)resetChanges;
 
-- (NSArray *)columns;
-+ (NSArray *)columns;
 
 #pragma mark - Relationships
 
@@ -41,13 +66,14 @@
 
 - (id)belongsTo:(NSString *)aClassName;
 - (void)setRecord:(ActiveRecord *)aRecord belongsTo:(NSString *)aRelation;
+- (BOOL)persistRecord:(ActiveRecord *)aRecord belongsTo:(NSString *)aRelation;
 
 #pragma mark HasMany
 
 - (ARLazyFetcher *)hasManyRecords:(NSString *)aClassName;
 - (void)addRecord:(ActiveRecord *)aRecord;
 - (void)removeRecord:(ActiveRecord *)aRecord;
-
+- (BOOL)persistRecord:(ActiveRecord *)aRecord;
 #pragma mark HasManyThrough
 
 - (ARLazyFetcher *)hasMany:(NSString *)aClassName
@@ -56,7 +82,9 @@
           ofClass:(NSString *)aClassname
           through:(NSString *)aRelationshipClassName;
 - (void)removeRecord:(ActiveRecord *)aRecord through:(NSString *)aClassName;
-
+- (BOOL)persistRecord:(ActiveRecord *)aRecord
+              ofClass:(NSString *)aClassname
+              through:(NSString *)aRelationshipClassName;
 #pragma mark - register relationships
 
 + (void)registerRelationships;
@@ -71,10 +99,6 @@
 
 - (void)privateAfterDestroy;
 
-#pragma mark - Column getters
-
-+ (ARColumn *)columnNamed:(NSString *)aColumnName;
-- (ARColumn *)columnNamed:(NSString *)aColumnName;
 
 + (ARColumn *)columnWithSetterNamed:(NSString *)aSetterName;
 - (ARColumn *)columnWithSetterNamed:(NSString *)aSetterName;
@@ -82,12 +106,12 @@
 + (ARColumn *)columnWithGetterNamed:(NSString *)aGetterName;
 - (ARColumn *)columnWithGetterNamed:(NSString *)aGetterName;
 
-- (NSSet *)changedColumns;
-
 #pragma mark - Dynamic Properties
 
 + (void)initializeDynamicAccessors;
 - (void)setValue:(id)aValue forColumn:(ARColumn *)aColumn;
+- (void)loadValue:(id)value forColumn:(ARColumn *) column;
+- (id)valueForImmutableColumn:(ARColumn *)column;//TODO: renamed. This loads and hashes for deserializable Columns, which can be dirty without setting.
 - (id)valueForColumn:(ARColumn *)aColumn;
 
 #pragma mark - Indices support
@@ -97,6 +121,14 @@
 
 - (NSString *)recordName;
 
-- (NSString *)foreignKeyName;
+#pragma mark - Entity Caching
+- (ActiveRecord*) setCachedEntity: (ActiveRecord *) entity forKey: (NSString *) field;
+- (ActiveRecord *) cachedEntityForKey: (NSString *) field;
+- (NSArray*) cachedArrayForKey: (NSString *) field;
+- (void) addCachedEntity: (ActiveRecord *) entity forKey: (NSString *) field;
+- (void) removeCachedEntity: (ActiveRecord *) entity forKey: (NSString *) field;
+
+#pragma  mark - Synchronization Support
+- (void) markQueuedRelationshipsForSynchronization;
 
 @end

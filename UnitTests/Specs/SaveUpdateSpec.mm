@@ -12,6 +12,8 @@
 #import "Animal.h"
 #import "User.h"
 #import "PrimitiveModel.h"
+#import "Item.h"
+#import "ActiveRecord_Private.h"
 
 using namespace Cedar::Matchers;
 
@@ -25,14 +27,69 @@ afterEach(^{
     [[ARDatabaseManager sharedManager] clearDatabase];
 });
 
+
+describe(@"NewAndCreate", ^{
+    it(@"should be successful with :new method ", ^{
+        NSNumber *recordId = nil;
+        Animal *enot = [Animal record: @{@"name":@"animal", @"title": @"Racoon"}];
+        [enot isNewRecord] should be_truthy;
+        enot.save should  be_truthy;
+        recordId = enot.id;
+        Animal *racoon = [[Animal allRecords] objectAtIndex:0];
+
+        racoon.id should equal(recordId);
+        racoon.title should equal(@"Racoon");
+        racoon.name should equal(@"animal");
+        [racoon isNewRecord] should_not  be_truthy;
+    });
+
+
+
+    it(@"should be successful with :create method ", ^{
+        NSNumber *recordId = nil;
+        Animal *enot = [Animal create: @{@"name":@"animal", @"title": @"Racoon"}] ;
+        enot should_not be_nil;
+        enot.id should_not be_nil;
+        recordId = enot.id;
+
+        Animal *racoon = [[Animal allRecords] objectAtIndex:0];
+
+        racoon.id should equal(recordId);
+        racoon.title should equal(@"Racoon");
+        racoon.name should equal(@"animal");
+    });
+
+});
+
+
+    describe(@"NewAndSync", ^{
+        it(@"should synchronize with existing Item ", ^{
+
+            Item *initialItem = [Item new:@{@"name" : @"Misc Name", @"title" : @"This is a test", @"text":@"text1"}];
+            Item *syncItem = [Item new:@{@"name" : @"Misc Name", @"text":@"text2"}];
+            Item *persistedItem = nil;
+
+            initialItem.save should be_truthy;
+            [syncItem sync] should be_truthy;
+            persistedItem = [initialItem reload];
+
+            syncItem.title should equal(initialItem.title);
+            syncItem.id should equal(initialItem.id);
+            persistedItem.text should equal(syncItem.text);
+
+
+        });
+
+    });
+
 describe(@"Update", ^{
 #warning separate this specs
     it(@"should be successful", ^{
         NSNumber *recordId = nil;
-        Animal *enot = [[Animal newRecord] autorelease];
+        Animal *enot = [Animal record] ;
         enot.name = @"animal";
         enot.title = @"Racoon";
-        enot.save should BeTruthy();
+        enot.save should be_truthy;
         recordId = enot.id;
         Animal *record = [[Animal allRecords] objectAtIndex:0];
         record.title = @"Enot";
@@ -46,22 +103,27 @@ describe(@"Update", ^{
     });
     
     it(@"should not validate properies that don't changed", ^{
-        User *user = [[User newRecord] autorelease];
+        User *user = [User record];
         user.name = @"Alex";
-        user.save should BeTruthy();
+        user.save should be_truthy;
         user.name = @"Alex";
-        user.save should BeTruthy();
-        user.save should BeTruthy();
+        user.save should be_truthy;
+        user.save should be_truthy;
+        user = nil;
     });
     
     it(@"should save values with quotes", ^{
-        User *user = [[User newRecord] autorelease];
-        user.name = @"Al\"ex";
+        User *user = [User record];
+        user.name = @"Al'ex";
+        user.save should be_truthy;
+
+        user = [User record];
+        user.name = @"Bo\"b";
         user.save should be_truthy;
     });
     
     it(@"should update values with quotes", ^{
-        User *user = [[User newRecord] autorelease];
+        User *user = [User record];
         user.name = @"Peter";
         user.save should be_truthy;
         User *savedUser = [[User allRecords] lastObject];
@@ -70,7 +132,7 @@ describe(@"Update", ^{
     });
     
     it(@"should save/load record with primitive types", ^{
-        PrimitiveModel *model = [PrimitiveModel newRecord];
+        PrimitiveModel *model = [PrimitiveModel new];
 
         char charValue = -42;
         unsigned char unsignedCharValue = 'q';

@@ -33,4 +33,8 @@ namespace AR {
     {
         return value;
     }
+
+  id NSStringColumn::toObjCDefaultObject(void) const {
+      return @"";
+  }
 };

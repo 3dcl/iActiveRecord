@@ -9,11 +9,13 @@
 #import "ARSQLBuilder.h"
 #import "ActiveRecord_Private.h"
 #import "ARColumn.h"
+#import "NSString+sqlRepresentation.h"
+
 
 @implementation ARSQLBuilder
 
 + (const char *)sqlOnUpdateRecord:(ActiveRecord *)aRecord {
-    NSSet *changedColumns = [aRecord changedColumns];
+    NSSet *changedColumns = [NSSet setWithSet: [aRecord changedColumns]];
     NSInteger columnsCount = changedColumns.count;
     if (columnsCount == 0) {
         return NULL;
@@ -21,23 +23,16 @@
     NSMutableArray *columnValues = [NSMutableArray arrayWithCapacity:columnsCount];
     NSEnumerator *columnsIterator = [changedColumns objectEnumerator];
     for (int index = 0; index < columnsCount; index++) {
-        ARColumn *column = [columnsIterator nextObject];
+        ARColumn *column = [columnsIterator nextObject];   //FIXME: NSFastEnumerationMutationHandler
         NSString *value = [column sqlValueForRecord:aRecord];
-        NSString *updater;
-        if (value) {
-            updater = [NSString stringWithFormat:
-                         @"\"%@\"=\"%@\"",
-                         column.columnName,
-                         [value stringByReplacingOccurrencesOfString:@"\"" withString:@"\"\""]];
-        } else {
-            updater = [NSString stringWithFormat:
-                         @"\"%@\"=NULL",
-                         column.columnName];
-        }
+        NSString *updater = [NSString stringWithFormat:
+                             @"\"%@\"='%@'",
+                             column.mappingName,
+                             TO_SQL_VALUE(value)];
         [columnValues addObject:updater];
     }
     NSString *sqlString = [NSString stringWithFormat:@"UPDATE \"%@\" SET %@ WHERE id = %@",
-                           [aRecord recordName],
+                           [aRecord tableName],
                            [columnValues componentsJoinedByString:@","],
                            aRecord.id];
     return [sqlString UTF8String];
@@ -45,51 +40,41 @@
 
 + (const char *)sqlOnDropRecord:(ActiveRecord *)aRecord {
     NSString *sqlString = [NSString stringWithFormat:@"DELETE FROM \"%@\" WHERE id = %@",
-                           [aRecord recordName], aRecord.id];
+                           [aRecord tableName], aRecord.id];
     return [sqlString UTF8String];
 }
 
-+ (const char *)sqlOnCreateTableForRecord:(Class)aRecord {
++ (const char *)sqlOnCreateTableForRecord:(Class <ActiveRecord>)aRecord {
     NSMutableString *sqlString = [NSMutableString stringWithFormat:
                                   @"CREATE TABLE \"%@\"(id integer primary key unique",
-                                  [aRecord recordName]];
+                                  [aRecord tableName]];
     for (ARColumn *column in [aRecord columns]) {
         if (![column.columnName isEqualToString:@"id"]) {
             [sqlString appendFormat:@",\"%@\" %s",
-             column.columnName, [column sqlType]];
+             column.mappingName, [column sqlType]];
         }
     }
     [sqlString appendFormat:@")"];
     return [sqlString UTF8String];
 }
 
-+ (const char *)sqlOnAddColumn:(NSString *)aColumnName toRecord:(Class)aRecord {
++ (const char *)sqlOnAddColumn:(NSString *)aColumnName toRecord:(Class <ActiveRecord>)aRecord {
     NSMutableString *sqlString = [NSMutableString stringWithFormat:
                                   @"ALTER TABLE \"%@\" ADD COLUMN ",
-                                  [aRecord recordName]];
-    ARColumn *column = [aRecord columnNamed:aColumnName];
+                                  [aRecord tableName]];
+    ARColumn *column = [aRecord performSelector:@selector(columnNamed:) withObject:aColumnName];
     [sqlString appendFormat:@"\"%@\" %s",
-     aColumnName, [column sqlType]];
+     column.mappingName, [column sqlType]];
     return [sqlString UTF8String];
 }
 
-+ (const char *)sqlOnCreateUniqueIndex:(NSString *)aColumnName forRecord:(ActiveRecord *)aRecord {
++ (const char *)sqlOnCreateIndex:(NSString *)aColumnName forRecord:(Class <ActiveRecord>)aRecord {
+    ARColumn *column = [aRecord performSelector:@selector(columnNamed:) withObject:aColumnName];
     NSString *sqlString = [NSString stringWithFormat:
-                           @"CREATE UNIQUE INDEX IF NOT EXISTS index_unique_%@_on_%@ ON \"%@\" (\"%@\")",
-                           [aRecord recordName],
-                           aColumnName,
-                           [aRecord recordName],
-                           aColumnName];
-    return [sqlString UTF8String];
-}
-
-+ (const char *)sqlOnCreateIndex:(NSString *)aColumnName forRecord:(ActiveRecord *)aRecord {
-    NSString *sqlString = [NSString stringWithFormat:
-                           @"CREATE INDEX IF NOT EXISTS index_%@_on_%@ ON \"%@\" (\"%@\")",
-                           [aRecord recordName],
-                           aColumnName,
-                           [aRecord recordName],
-                           aColumnName];
+                           @"CREATE INDEX IF NOT EXISTS index_%@ ON \"%@\" (\"%@\")",
+                                    column.mappingName,
+                           [aRecord tableName],
+                           column.mappingName];
     return [sqlString UTF8String];
 }
 

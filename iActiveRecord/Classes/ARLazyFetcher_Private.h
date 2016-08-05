@@ -7,7 +7,7 @@
 //
 
 #import "ARLazyFetcher.h"
-
+#import "ActiveRecordProtocol.h"
 static const char *joins[] = {"LEFT", "RIGHT", "INNER", "OUTER"};
 
 static NSString * joinString(ARJoinType type)
@@ -18,19 +18,24 @@ static NSString * joinString(ARJoinType type)
 @interface ARLazyFetcher ()
 {
     @private
-    Class recordClass;
+    Class <ActiveRecord> recordClass;
     NSString *sqlRequest;
     NSMutableDictionary *orderByConditions;
     BOOL useRandomOrder;
     NSMutableSet *onlyFields;
     NSMutableSet *exceptFields;
     ARJoinType joinType;
-    Class joinClass;
+    Class  <ActiveRecord> joinClass;
     NSString *recordField;
     NSString *joinField;
     BOOL useJoin;
     NSNumber *limit;
     NSNumber *offset;
+    ActiveRecord * row;
+    ARRelationType relationType;
+    NSString *hasManyClass;
+    NSString *hasManyThroughClass;
+    NSArray *arrayRows;
 }
 
 @property (nonatomic, copy) NSMutableString *whereStatement;
@@ -46,5 +51,7 @@ static NSString * joinString(ARJoinType type)
 - (NSString *)createJoinStatement;
 
 - (NSSet *)fieldsOfRecord:(id)aRecord;
+
+
 
 @end

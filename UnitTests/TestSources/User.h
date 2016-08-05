@@ -6,23 +6,25 @@
 //  Copyright (c) 2012 okolodev.org. All rights reserved.
 //
 
-#import "ActiveRecord.h"
+#import "VinylRecord.h"
 
 /*
     User belongs to group
     and has many projects
  */
 
-@interface User : ActiveRecord
+@interface User : VinylRecord
 
 @property (nonatomic, copy) NSString *name;
 @property (nonatomic, retain) NSArray *ignoredProperty;
 //  used in belongs to relationship
-@property (nonatomic, retain) NSNumber *groupId;
+//@property (nonatomic, retain) NSNumber *groupId;
 
 @property (nonatomic, retain) NSData *imageData;
 @property (nonatomic, retain) NSDate *birthDate;
 belongs_to_dec(Group, group, ARDependencyDestroy)
 has_many_through_dec(Project, UserProjectRelationship, projects, ARDependencyDestroy)
-
+has_many_through_dec(Animal, UserAnimalRelationship, pets, ARDependencyDestroy)
+column_dec(dictionary,attributes)
+column_dec(array,list)
 @end
