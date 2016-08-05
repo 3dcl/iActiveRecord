@@ -78,4 +78,14 @@
     return [sqlString UTF8String];
 }
 
++ (const char *)sqlOnCreateUniqueIndex:(NSString *)aColumnName forRecord:(Class <ActiveRecord>)aRecord {
+    ARColumn *column = [aRecord performSelector:@selector(columnNamed:) withObject:aColumnName];
+    NSString *sqlString = [NSString stringWithFormat:
+                           @"CREATE UNIQUE INDEX IF NOT EXISTS index_%@ ON \"%@\" (\"%@\")",
+                           column.mappingName,
+                           [aRecord tableName],
+                           column.mappingName];
+    return [sqlString UTF8String];
+}
+
 @end

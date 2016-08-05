@@ -17,6 +17,7 @@
 + (const char *)sqlOnCreateTableForRecord:(Class<ActiveRecord>)aRecord;
 + (const char *)sqlOnAddColumn:(NSString *)aColumnName toRecord:(Class<ActiveRecord>)aRecord;
 + (const char *)sqlOnCreateIndex:(NSString *)aColumnName forRecord:(Class <ActiveRecord>)aRecord;
++ (const char *)sqlOnCreateUniqueIndex:(NSString *)aColumnName forRecord:(Class <ActiveRecord>)aRecord;
 + (const char *)sqlOnUpdateRecord:(ActiveRecord *)aRecord;
 + (const char *)sqlOnDropRecord:(ActiveRecord *)aRecord;
 

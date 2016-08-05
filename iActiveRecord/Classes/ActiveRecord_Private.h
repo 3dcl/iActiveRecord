@@ -118,6 +118,7 @@
 
 + (void)initializeIndices;
 + (void)addIndexOn:(NSString *)aField;
++ (void)addUniqueIndexOn:(NSString *)aField;
 
 - (NSString *)recordName;
 

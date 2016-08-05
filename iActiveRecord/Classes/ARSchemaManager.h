@@ -13,6 +13,7 @@
 
 @property (nonatomic, retain) NSMutableDictionary *schemes;
 @property (nonatomic, retain) NSMutableDictionary *indices;
+@property (nonatomic, retain) NSMutableDictionary *uniqueIndices;
 @property (nonatomic, retain) NSMutableDictionary *columns;
 @property (nonatomic, retain) NSMutableDictionary *mappings;
 
@@ -22,10 +23,12 @@
 - (NSArray *)columnsForRecord:(Class)aRecordClass;
 
 - (void)addIndexOnColumn:(NSString *)aColumn ofRecord:(Class)aRecordClass;
+- (void)addUniqueIndexOnColumn:(NSString *)aColumn ofRecord:(Class)aRecordClass;
 - (void)addMappingOnProperty: (NSString *)propertyName mapping:(NSDictionary *)mapping ofRecord:(Class)aRecordClass;
 - (void)addMappingOnProperty: (NSString *)propertyName column:(NSString *)columnName ofRecord:(Class)aRecordClass;
 
 - (NSArray *)indicesForRecord:(Class)aRecordClass;
+- (NSArray *)uniqueIndicesForRecord:(Class)aRecordClass;
 - (ARColumn *) columnForRecord: (Class)aRecordClass named:(NSString *) columnName;
 - (void) addColumn:(ARColumn *) column forRecord:(Class) aRecordClass named:(NSString *) columnName;
 

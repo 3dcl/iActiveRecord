@@ -26,6 +26,7 @@
     self = [super init];
     self.schemes = [NSMutableDictionary new];
     self.indices = [NSMutableDictionary new];
+    self.uniqueIndices = [NSMutableDictionary new];
     self.columns = [NSMutableDictionary new];
     self.mappings = [NSMutableDictionary new];
     return self;
@@ -97,6 +98,12 @@
               toArrayNamed:[aRecordClass performSelector:@selector(className)]];
 }
 
+- (void)addUniqueIndexOnColumn:(NSString *)aColumn ofRecord:(Class)aRecordClass {
+    [self.uniqueIndices addValue:aColumn
+              toArrayNamed:[aRecordClass performSelector:@selector(className)]];
+}
+
+
 - (void)addMappingOnProperty: (NSString *)propertyName column:(NSString *)columnName ofRecord:(Class)aRecordClass {
     [self addMappingOnProperty:propertyName mapping:@{@"name": columnName} ofRecord:aRecordClass];
 }
@@ -113,4 +120,10 @@
 - (NSArray *)indicesForRecord:(Class)aRecordClass {
     return [self.indices valueForKey:[aRecordClass performSelector:@selector(className)]];
 }
+
+
+- (NSArray *)uniqueIndicesForRecord:(Class)aRecordClass {
+    return [self.uniqueIndices valueForKey:[aRecordClass performSelector:@selector(className)]];
+}
+
 @end
