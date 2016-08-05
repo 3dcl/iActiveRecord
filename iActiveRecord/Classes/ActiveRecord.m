@@ -316,11 +316,9 @@ static NSString *registerHasManyThrough = @"_ar_registerHasManyThrough";
 }
 
 - (NSString*) foreignPropertyKey {
-    //[NSString stringWithFormat:@"%@Id", [[row recordName] lowercaseFirst]];
     return [self.class foreignPropertyKey];
 }
 + (NSString*) foreignPropertyKey {
-    //[NSString stringWithFormat:@"%@Id", [[row recordName] lowercaseFirst]];
     return [NSString stringWithFormat:@"%@Id",[[self className] lowercaseFirst] ];
 }
 
@@ -764,8 +762,11 @@ static NSString *registerHasManyThrough = @"_ar_registerHasManyThrough";
 }
 
 - (BOOL)persistRecord:(ActiveRecord *)aRecord belongsTo:(NSString *)aRelation {
-    NSString *relId = [NSString stringWithFormat:
-            @"%@Id", [aRelation lowercaseFirst]];
+
+    Class <ActiveRecordPrivateMethods> aClass = NSClassFromString(aRelation);
+
+    NSString *relId = [aClass foreignPropertyKey];
+    
     ARColumn *column = [self columnNamed:relId];
     BOOL success  = YES;
 
@@ -871,7 +872,8 @@ static NSString *registerHasManyThrough = @"_ar_registerHasManyThrough";
               ofClass:(NSString *)aClassname
               through:(NSString *)aRelationshipClassName { //TODO: Refactor method to support mapping
     Class RelationshipClass = NSClassFromString(aRelationshipClassName);
-
+    Class SourceClass = NSClassFromString(aClassname);
+    
     NSString *currentId = [self foreignPropertyKey];
     NSString *relId = [aRecord foreignPropertyKey];
     ARLazyFetcher *fetcher = [RelationshipClass lazyFetcher];
@@ -885,8 +887,8 @@ static NSString *registerHasManyThrough = @"_ar_registerHasManyThrough";
     if ([fetcher count] != 0) {
         return YES; // while it couldn't save, it already exists which has same effect.
     }
-    NSString *currentIdSelectorString = [NSString stringWithFormat:@"set%@Id:", [[self class] description]];
-    NSString *relativeIdSlectorString = [NSString stringWithFormat:@"set%@Id:", aClassname];
+    NSString *currentIdSelectorString = [[RelationshipClass columnNamed: [self.class foreignPropertyKey]] setter];
+    NSString *relativeIdSlectorString = [[RelationshipClass columnNamed: [SourceClass foreignPropertyKey]] setter];
 
     SEL currentIdSelector = NSSelectorFromString(currentIdSelectorString);
     SEL relativeIdSelector = NSSelectorFromString(relativeIdSlectorString);

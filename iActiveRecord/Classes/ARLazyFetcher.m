@@ -207,8 +207,9 @@
     NSString *fieldname = nil;
     for (NSString *field in [self recordFields]) {
         fieldname = [NSString stringWithFormat:
-                     @"\"%@\".\"%@\"",
+                     @"\"%@\".\"%@\" AS \"%@\"",
                      [recordClass tableName],
+                     field,
                      field];
         [fields addObject:fieldname];
     }
@@ -303,15 +304,17 @@
 
 - (ARLazyFetcher *)join:(Class <ActiveRecord> )aJoinRecord { //TODO: Refactor method to support mapping
 
-    NSString *_recordField = @"id";
-    NSString *_joinField = [NSString stringWithFormat:@"%@Id",
-                            [[recordClass description] lowercaseFirst]];
     Class <ActiveRecordPrivateMethods> recordClazz =  aJoinRecord;
-    NSString *mappingId = [recordClazz stringMappingForColumnNamed:_joinField];
+    NSString *_recordField = @"id";
+    NSString *_joinField = [((Class <ActiveRecordPrivateMethods>)recordClass) foreignPropertyKey] ;
+    //[NSString stringWithFormat:@"%@Id",
+                            //[[recordClass description] lowercaseFirst];
+    
+    NSString *mappingId = [((Class <ActiveRecordPrivateMethods>)recordClass) stringMappingForColumnNamed:_joinField];
     [self join:aJoinRecord
        useJoin:ARJoinInner
        onField:_recordField
-      andField:mappingId];
+      andField:mappingId == nil ? _joinField : mappingId];
     return self;
 }
 
