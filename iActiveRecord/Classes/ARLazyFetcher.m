@@ -151,11 +151,12 @@
         return statement;
     }
     [statement appendFormat:@" ORDER BY "];
-    for (NSString *key in [orderByConditions allKeys]) {
-        NSString *order = [[orderByConditions valueForKey:key] boolValue] ? @"ASC" : @"DESC";
+    for (NSArray *condition in orderByConditions) {
+        NSString *field = [condition objectAtIndex:0];
+        NSString *order = ([[condition objectAtIndex:1] boolValue] ? @"ASC" : @"DESC");
         [statement appendFormat:
          @" \"%@\".\"%@\" %@ ,",
-         [recordClass tableName], key, order];
+         [recordClass performSelector:@selector(recordName)], field, order];
     }
     [statement replaceCharactersInRange:NSMakeRange(statement.length - 1, 1) withString:@""];
     return statement;
@@ -256,10 +257,10 @@
 
 - (ARLazyFetcher *)orderBy:(NSString *)aField ascending:(BOOL)isAscending {
     if (orderByConditions == nil) {
-        orderByConditions = [NSMutableDictionary new];
+        orderByConditions = [NSMutableArray new];
     }
     NSNumber *ascending = [NSNumber numberWithBool:isAscending];
-    [orderByConditions setValue:ascending forKey:aField];
+    [orderByConditions addObject:@[aField, ascending]];
     return self;
 }
 
@@ -443,7 +444,6 @@
     }
     va_end(args);
 
-
     NSMutableString *sqlQuery = [NSMutableString stringWithCapacity:[aCondition length]];
     NSScanner *scanner = [NSScanner scannerWithString:aCondition];
     NSCharacterSet *illegalCharacterSet = nil;// [NSCharacterSet illegalCharacterSet];
@@ -467,6 +467,7 @@
             [sqlQuery appendFormat:@"%@",[sqlArguments objectAtIndex:sqlQueryIndex++]];
         }
     }
+
 
     if (!self.whereStatement) {
         self.whereStatement = sqlQuery;

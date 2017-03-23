@@ -20,7 +20,7 @@ static NSString * joinString(ARJoinType type)
     @private
     Class <ActiveRecord> recordClass;
     NSString *sqlRequest;
-    NSMutableDictionary *orderByConditions;
+    NSMutableArray *orderByConditions;
     BOOL useRandomOrder;
     NSMutableSet *onlyFields;
     NSMutableSet *exceptFields;
@@ -52,6 +52,5 @@ static NSString * joinString(ARJoinType type)
 
 - (NSSet *)fieldsOfRecord:(id)aRecord;
 
-
-
 @end
+

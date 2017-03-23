@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 # VinylRecord
 VinylRecord (short for Vinyl ActiveRecord) is a pure SQLite ActiveRecord ORM for iOS without CoreData. It was fork of a discontinued project, iActiveRecord by Alex Denisov who pioneered a major first step in creating an ORM for iOS when they were few others in site. Desiring rapid fixes and new features for an application in dire need of a persistence layer, the API was reborn with new name as to avoid confusion with its predecessor, for which it maintains compatibility, and other ORM's with the ActiveRecord name.
+=======
+# The project is [looking for maintainer](https://github.com/AlexDenisov/iActiveRecord/issues/88)
+>>>>>>> 5baf775035dfb2e2e34746a4970774388d961112
 
 # FEATURES
 * Belongs-To, Has-Many and Has-Many-Through relationships    
